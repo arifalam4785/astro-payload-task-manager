@@ -1,16 +1,16 @@
 ---
+import Layout from "../layouts/Layout.astro";
+
+
 export const prerender = false;
 
-// 1. Define the variable from your .env file
-// If the .env is missing, it falls back to 127.0.0.1:3000 as a safety net
 const BACKEND_URL = import.meta.env.PUBLIC_PAYLOAD_URL || "http://127.0.0.1:3000";
-
 const cookie = Astro.request.headers.get("cookie") || "";
+
 let user = null;
 let tasks = [];
 
 try {
-  // 2. Use backticks `` and ${BACKEND_URL} to replace the hardcoded string
   const meRes = await fetch(`${BACKEND_URL}/api/users/me`, {
     headers: { cookie },
   });
@@ -20,7 +20,7 @@ try {
     user = meData.user;
   }
 
-  // 3. Do the same for the tasks fetch
+  // Fetching with depth=1 so taskImage becomes an object with an ID and URL
   const taskRes = await fetch(`${BACKEND_URL}/api/tasks?limit=50&sort=-createdAt&depth=1`, {
     headers: { cookie },
   });
@@ -40,8 +40,12 @@ try {
     <title>Quick Tasks</title>
   </head>
   <body class="bg-gray-100 min-h-screen flex flex-col items-center p-10 text-black">
+    <Layout title="Quick Tasks">
     <div class="w-full max-w-md bg-white p-6 rounded-lg shadow-md">
+      <div class="flex justify-center items-center mb-4">
       <h1 class="text-2xl font-bold mb-4 text-gray-800 text-center">Quick Tasks</h1>
+
+      </div>
 
       {user ? (
         <div class="mb-6">
@@ -52,10 +56,10 @@ try {
 
           <form id="task-form" class="flex flex-col gap-3 mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
             <div class="flex gap-2">
-              <input type="text" name="content" placeholder="Add a task..." class="flex-1 border p-2 rounded text-black" required />
-              <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Add</button>
+              <input type="text" name="content" placeholder="Add a task (e.g. My Blog)..." class="flex-1 border p-2 rounded text-black" required />
+              <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700">Add</button>
             </div>
-            <input type="file" name="file" accept="image/*" class="text-xs" />
+            <input type="file" name="file" accept="image/*,.html" class="text-xs" />
           </form>
         </div>
       ) : (
@@ -65,69 +69,117 @@ try {
         </div>
       )}
 
-      <ul class="space-y-2">
+      <ul class="space-y-3">
         {tasks.map((task: any) => {
           const imageData = task.taskImage;
-          const hasImage = imageData && typeof imageData === "object";
+          const isHtml = imageData?.mimeType === 'text/html';
+          const isImage = imageData?.mimeType?.includes('image');
+
           return (
-            <li class="flex items-center gap-4 p-3 border rounded bg-white">
-              {hasImage && (
-                <img src={`http://127.0.0.1:3000/api/media/file/${imageData.filename}`} class="w-10 h-10 object-cover rounded" />
-              )}
-              <span class="flex-1">{task.content}</span>
-              <button data-id={task.id} class="delete-btn text-red-500 text-xl">🗑️</button>
+            <li class="flex items-center justify-between p-3 border rounded bg-white hover:bg-gray-50 transition shadow-sm">
+              <div class="flex items-center gap-4">
+                {/* 1. Show Image Preview or HTML Icon */}
+                {isImage && (
+                  <img src={imageData.url} class="w-10 h-10 object-cover rounded shadow-sm" />
+                )}
+                {isHtml && (
+                  <div class="w-10 h-10 bg-green-100 flex items-center justify-center rounded text-xl shadow-sm">
+                    📄
+                  </div>
+                )}
+
+                <div class="flex flex-col">
+                  <a href={`/task/${task.id}`} class="font-medium text-gray-800 hover:text-blue-600">{task.content}</a>
+                  
+                  {/* 2. DYNAMIC LINK: Automatically uses the media ID from Payload */}
+                  {isHtml && (
+                    <a 
+                      href={`/render/${imageData.id}`} 
+                      target="_blank" 
+                      class="text-xs text-blue-600 font-bold hover:underline flex items-center gap-1 mt-1"
+                    >
+                      👁️ VIEW LIVE BLOG
+                    </a>
+                  )}
+                </div>
+              </div>
+              
+              <button data-id={task.id} class="delete-btn text-gray-400 hover:text-red-500 transition text-xl px-2">
+                🗑️
+              </button>
             </li>
           );
         })}
       </ul>
     </div>
+    </Layout>
 
     <script>
-      // LOGOUT LOGIC
       const BACKEND_URL = import.meta.env.PUBLIC_PAYLOAD_URL || "http://127.0.0.1:3000";
+
+      // LOGOUT
       const logoutBtn = document.getElementById("logout-btn");
       if (logoutBtn) {
         logoutBtn.addEventListener("click", async () => {
-          await fetch(`${BACKEND_URL}/api/users/logout`, { method: "POST", credentials: "include" });
-          document.cookie = "payload-token=; Max-Age=0; path=/;";
-          window.location.href = "/";
+          try {
+            await fetch(`${BACKEND_URL}/api/users/logout`, { method: "POST", credentials: "include" });
+            document.cookie = "payload-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            window.location.replace("/login"); 
+          } catch (err) {
+            console.error("Logout failed", err);
+          }
         });
       }
 
-      // TASK FORM LOGIC
+      // TASK FORM (UPLOADS AND LINKS AUTOMATICALLY)
       const form = document.getElementById("task-form") as HTMLFormElement;
       if (form) {
         form.addEventListener("submit", async (e) => {
           e.preventDefault();
+          const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+          submitBtn.disabled = true;
+          submitBtn.innerText = "...";
+
           const formData = new FormData(form);
           const content = formData.get("content");
           const file = formData.get("file") as File;
           let imageId = null;
 
-          if (file && file.size > 0) {
-            const mediaData = new FormData();
-            mediaData.append("file", file);
-            const mRes = await fetch(`${BACKEND_URL}/api/media`, { method: "POST", body: mediaData, credentials: "include" });
-            if (mRes.ok) { const mJson = await mRes.json(); imageId = mJson.doc.id; }
-          }
+          try {
+            if (file && file.size > 0) {
+              const mediaData = new FormData();
+              mediaData.append("file", file);
+              const mRes = await fetch(`${BACKEND_URL}/api/media`, { method: "POST", body: mediaData, credentials: "include" });
+              if (mRes.ok) { 
+                const mJson = await mRes.json(); 
+                imageId = mJson.doc.id; // This ID is what makes the link dynamic!
+              }
+            }
 
-          const tRes = await fetch(`${BACKEND_URL}/api/tasks`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ content, taskImage: imageId }),
-            credentials: "include"
-          });
-          if (tRes.ok) window.location.reload();
+            const tRes = await fetch(`${BACKEND_URL}/api/tasks`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ content, taskImage: imageId }),
+              credentials: "include"
+            });
+            
+            if (tRes.ok) window.location.reload();
+          } catch (err) {
+            console.error(err);
+          } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerText = "Add";
+          }
         });
       }
 
-      // DELETE LOGIC
+      // DELETE
       document.addEventListener("click", async (e) => {
         const btn = (e.target as HTMLElement).closest(".delete-btn");
-        if (btn && confirm("Delete?")) {
+        if (btn && confirm("Delete task?")) {
           const id = btn.getAttribute("data-id");
-          await fetch(`${BACKEND_URL}/api/tasks/${id}`, { method: "DELETE", credentials: "include" });
-          window.location.reload();
+          const res = await fetch(`${BACKEND_URL}/api/tasks/${id}`, { method: "DELETE", credentials: "include" });
+          if (res.ok) window.location.reload();
         }
       });
     </script>

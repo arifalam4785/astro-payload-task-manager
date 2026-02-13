@@ -1,0 +1,113 @@
+---
+// src/pages/task/[id].astro
+export const prerender = false;
+
+const { id } = Astro.params;
+const BACKEND_URL = import.meta.env.PUBLIC_PAYLOAD_URL || "http://localhost:3000";
+const cookie = Astro.request.headers.get("cookie") || "";
+
+// 1. CHECK AUTH FIRST
+if (!cookie.includes('payload-token')) {
+  return Astro.redirect('/login');
+}
+
+let task = null;
+
+try {
+  // 2. FETCH WITH DEPTH
+  const res = await fetch(`${BACKEND_URL}/api/tasks/${id}?depth=1`, {
+    headers: { cookie }
+  });
+
+  if (res.ok) {
+    task = await res.json();
+    // Troubleshooting: This will show in your terminal
+    console.log("Task Image Data:", task.taskImage); 
+  }
+} catch (e) {
+  console.error("Fetch error:", e);
+}
+
+if (!task) return Astro.redirect('/');
+---
+
+<html>
+  <head>
+    <title>Edit Task</title>
+  </head>
+  <body class="bg-gray-100 p-8">
+    <div class="max-w-xl mx-auto bg-white p-6 rounded-lg shadow">
+        <h1 class="text-2xl font-bold mb-4">Edit Task</h1>
+        <a href="/" class="text-blue-500 hover:underline">← Back to List</a>
+
+        <div class="mt-6">
+           <form id="edit-form" class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium">Task Content</label>
+                <input 
+                  type="text" 
+                  id="content" 
+                  value={task.content} 
+                  class="w-full p-2 border rounded mt-1" 
+                  required 
+                />
+              </div>
+              
+              {task.taskImage && typeof task.taskImage === 'object' ? (
+                <div class="py-4">
+                  <p class="text-sm text-gray-500 mb-2">Current Image:</p>
+                  <img 
+                    src={task.taskImage.url} 
+                     alt={task.taskImage.alt || "Task image"}
+                    class="rounded border shadow-sm w-full max-h-64 object-cover"
+                  />
+                </div>
+              ) : (
+                <p class="text-gray-400 italic">No image found for this task.</p>
+              )}
+              
+              <button 
+                type="submit" 
+                id="update-btn"
+                class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
+              >
+                Update Task
+              </button>
+           </form>
+        </div>
+    </div>
+
+    <script define:vars={{ id, BACKEND_URL }}>
+      const form = document.getElementById('edit-form');
+      const btn = document.getElementById('update-btn');
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        btn.disabled = true;
+        btn.innerText = "Saving...";
+
+        const newContent = document.getElementById('content').value;
+
+        try {
+          const res = await fetch(`${BACKEND_URL}/api/tasks/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: newContent }),
+            credentials: 'include'
+          });
+
+          if (res.ok) {
+            window.location.href = "/";
+          } else {
+            alert("Update failed");
+            btn.disabled = false;
+            btn.innerText = "Update Task";
+          }
+        } catch (err) {
+          console.error(err);
+          btn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>

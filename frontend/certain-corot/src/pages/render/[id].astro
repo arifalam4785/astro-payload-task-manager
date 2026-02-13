@@ -1,0 +1,46 @@
+---
+// src/pages/render/[id].astro
+export const prerender = false;
+
+const { id } = Astro.params;
+const BACKEND_URL = import.meta.env.PUBLIC_PAYLOAD_URL || "http://localhost:3000";
+
+let fileUrl = "";
+
+try {
+  // 1. Just get the metadata from Payload to find the file's location
+  const res = await fetch(`${BACKEND_URL}/api/media/${id}`);
+  if (res.ok) {
+    const mediaDoc = await res.json();
+    fileUrl = mediaDoc.url; // This is the http://localhost:3000/... path
+  }
+} catch (e) {
+  console.error("Error fetching media metadata:", e);
+}
+
+if (!fileUrl) return Astro.redirect('/404');
+---
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dynamic Page Viewer</title>
+    <style>
+        /* This makes the iframe fill the whole screen */
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+        iframe {
+            width: 100%;
+            height: 100vh;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <iframe src={fileUrl} title="Uploaded Content"></iframe>
+</body>
+</html>

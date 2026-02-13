@@ -1,0 +1,87 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+export const prerender = false;
+
+const BACKEND_URL = import.meta.env.PUBLIC_PAYLOAD_URL || "http://127.0.0.1:3000";
+
+// 1. GET FILTER FROM URL (e.g., /blog?type=tech)
+const filter = Astro.url.searchParams.get('type') || '';
+
+let htmlFiles = [];
+
+try {
+  // 2. BUILD DYNAMIC FETCH URL
+  let fetchUrl = `${BACKEND_URL}/api/media?limit=100&where[mimeType][equals]=text/html`;
+  
+  // If a filter is selected, add it to the Payload query
+  if (filter) {
+    fetchUrl += `&where[category][equals]=${filter}`;
+  }
+
+  const res = await fetch(fetchUrl);
+
+  if (res.ok) {
+    const data = await res.json();
+    htmlFiles = data.docs || [];
+  }
+} catch (e) {
+  console.log("FETCH FAILED:", e.message);
+}
+---
+
+<Layout title="Public Blog Archive">
+  <div class="max-w-4xl mx-auto w-full">
+    <header class="mb-12 text-center">
+      <h1 class="text-5xl font-black mb-4">The Collection</h1>
+      <p class="text-gray-500 mb-8">All HTML pages uploaded to the CMS</p>
+
+      {/* 3. CATEGORY FILTER BUTTONS */}
+      <div class="flex justify-center gap-2 text-sm">
+        <a href="/blog" class={`px-4 py-2 rounded-full border transition ${!filter ? 'bg-black text-white' : 'bg-white hover:bg-gray-100'}`}>
+          All
+        </a>
+        <a href="/blog?type=tech" class={`px-4 py-2 rounded-full border transition ${filter === 'tech' ? 'bg-black text-white' : 'bg-white hover:bg-gray-100'}`}>
+          Technology
+        </a>
+        <a href="/blog?type=personal" class={`px-4 py-2 rounded-full border transition ${filter === 'personal' ? 'bg-black text-white' : 'bg-white hover:bg-gray-100'}`}>
+          Personal
+        </a>
+      </div>
+    </header>
+
+    {htmlFiles.length === 0 ? (
+      <div class="text-center py-20">
+        <p class="text-gray-400">No {filter} files found in the CMS.</p>
+        <a href="/blog" class="text-blue-500 underline text-sm">Clear filters</a>
+      </div>
+    ) : (
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {htmlFiles.map((file) => (
+          <div class="bg-white border border-gray-200 p-6 rounded-2xl shadow-sm hover:shadow-md transition group">
+            <div class="flex flex-col h-full justify-between">
+              <div>
+                <div class="flex justify-between items-start">
+                   <span class="text-[10px] font-bold uppercase tracking-widest text-blue-500 bg-blue-50 px-2 py-1 rounded">
+                    {file.category || 'General'}
+                  </span>
+                </div>
+                <h2 class="text-2xl font-bold mt-3 mb-4 group-hover:text-blue-600 transition">
+                  {file.alt || file.filename}
+                </h2>
+              </div>
+              
+              <a 
+                href={`/render/${file.id}`} 
+                target="_blank"
+                class="w-full text-center bg-black text-white py-3 rounded-xl font-bold hover:bg-gray-800 transition shadow-lg shadow-gray-200"
+              >
+                Open Webpage
+              </a>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+</Layout>

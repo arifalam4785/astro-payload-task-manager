@@ -1,21 +1,28 @@
----                            
- 
----    
+---
+// 1. Import the Navbar here
+import Navbar from "../components/Navbar.astro";
+
+// 2. Accept a "title" prop so pages can set their own name
+const { title = "My App" } = Astro.props;
+---
+
 <!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro Basics</title>
-	</head>
-	<body>
-		<slot />
-	</body>
-</html>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <meta name="generator" content={Astro.generator} />
+        <title>{title}</title>
+    </head>
+    <body class="bg-gray-100 min-h-screen text-black">
+        <Navbar />
 
+        <main class="flex flex-col items-center p-4 md:p-10">
+             <slot />
+        </main>
+    </body>
+</html>
 <!-- <style>
 	html,
 	body {
