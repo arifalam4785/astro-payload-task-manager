@@ -15,7 +15,7 @@ export interface LoginOptions {
  */
 export async function login({
   page,
-  serverURL = import.meta.env.PUBLIC_PAYLOAD_URL,
+  serverURL = process.env.PUBLIC_PAYLOAD_URL || 'http://localhost:3000',
   user,
 }: LoginOptions): Promise<void> {
   await page.goto(`${serverURL}/admin/login`)
