@@ -50,8 +50,10 @@ export const prerender = false;
     </div>
 
     <script>
-      const loginForm = document.getElementById("login-form") as HTMLFormElement;
-      const messageEl = document.getElementById("message");
+      
+        const BACKEND_URL = import.meta.env.PUBLIC_PAYLOAD_URL || "https://astro-payload-task-manager.onrender.com";
+        const loginForm = document.getElementById("login-form") as HTMLFormElement;
+        const messageEl = document.getElementById("message");
 
       if (loginForm && messageEl) {
         loginForm.addEventListener("submit", async function (e) {
@@ -61,13 +63,12 @@ export const prerender = false;
 
           try {
             // FIXED: Pointing back to your Payload Backend Port 3000
-            const response = await fetch("http://127.0.0.1:3000/api/users/login", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(data),
-              credentials: "include",
-            });
-
+          const response = await fetch(BACKEND_URL + "/api/users/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+            credentials: "include",
+          });
             const result = await response.json();
 
             if (response.ok) {

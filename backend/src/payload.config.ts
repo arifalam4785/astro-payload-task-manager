@@ -13,24 +13,36 @@ const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 export default buildConfig({
-  serverURL: 'http://localhost:3000',
-  // UPDATED: Added both CORS and CSRF to allow Astro to talk to Payload
-  cors: ['http://localhost:4321'],
-  csrf: ['http://localhost:4321'], // ADDED THIS LINE
+  // Use process.env for Node.js backends
+  serverURL: process.env.PUBLIC_PAYLOAD_URL || 'https://astro-payload-task-manager.onrender.com',
+
+  cors: [
+    'http://localhost:4321',
+    'https://astro-payload-task-manager.onrender.com'
+  ],
+  csrf: [
+    'http://localhost:4321',
+    'https://astro-payload-task-manager.onrender.com'
+  ],
 
   admin: {
     user: Users.slug,
     importMap: {
       baseDir: path.resolve(dirname),
     },
+    // ✅ MOVED HERE: In Payload v3, cookieOptions lives inside admin
+    // This allows the cookie to be shared between localhost and Render
+    // @ts-ignore
+    cookieOptions: {
+      secure: true,
+      sameSite: 'none',
+    },
   },
+  
   collections: [Users, Media, Tasks],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || 'YOUR_SECRET_HERE',
   
-  // ADDED: This ensures the cookie is accessible across ports
-  cookiePrefix: 'payload', 
-
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },

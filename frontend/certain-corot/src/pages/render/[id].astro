@@ -3,7 +3,8 @@
 export const prerender = false;
 
 const { id } = Astro.params;
-const BACKEND_URL = import.meta.env.PUBLIC_PAYLOAD_URL || "http://localhost:3000";
+// @ts-ignore
+const BACKEND_URL = import.meta.env.PUBLIC_PAYLOAD_URL || "https://astro-payload-task-manager.onrender.com";
 
 let fileUrl = "";
 

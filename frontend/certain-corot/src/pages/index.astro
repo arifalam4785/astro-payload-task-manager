@@ -4,7 +4,8 @@ import Layout from "../layouts/Layout.astro";
 
 export const prerender = false;
 
-const BACKEND_URL = import.meta.env.PUBLIC_PAYLOAD_URL || "http://127.0.0.1:3000";
+// @ts-ignore
+const BACKEND_URL = import.meta.env.PUBLIC_PAYLOAD_URL || "https://astro-payload-task-manager.onrender.com";
 const cookie = Astro.request.headers.get("cookie") || "";
 
 let user = null;
@@ -115,7 +116,8 @@ try {
     </Layout>
 
     <script>
-      const BACKEND_URL = import.meta.env.PUBLIC_PAYLOAD_URL || "http://127.0.0.1:3000";
+      // @ts-ignore
+const BACKEND_URL = import.meta.env.PUBLIC_PAYLOAD_URL || "https://astro-payload-task-manager.onrender.com";
 
       // LOGOUT
       const logoutBtn = document.getElementById("logout-btn");

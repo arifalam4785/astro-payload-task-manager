@@ -3,7 +3,8 @@ import Layout from "../layouts/Layout.astro";
 
 export const prerender = false;
 
-const BACKEND_URL = import.meta.env.PUBLIC_PAYLOAD_URL || "http://127.0.0.1:3000";
+// @ts-ignore
+const BACKEND_URL = import.meta.env.PUBLIC_PAYLOAD_URL || "https://astro-payload-task-manager.onrender.com";
 
 // 1. GET FILTER FROM URL (e.g., /blog?type=tech)
 const filter = Astro.url.searchParams.get('type') || '';

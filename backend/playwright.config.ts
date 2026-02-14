@@ -36,6 +36,6 @@ export default defineConfig({
   webServer: {
     command: 'pnpm dev',
     reuseExistingServer: true,
-    url: 'http://localhost:3000',
+   url: import.meta.env.PUBLIC_PAYLOAD_URL,
   },
 })
