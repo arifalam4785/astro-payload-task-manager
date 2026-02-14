@@ -32,7 +32,7 @@ export default buildConfig({
     },
     // ✅ MOVED HERE: In Payload v3, cookieOptions lives inside admin
     // This allows the cookie to be shared between localhost and Render
-    // @ts-ignore
+    // @ts-expect-error
     cookieOptions: {
       secure: true,
       sameSite: 'none',
