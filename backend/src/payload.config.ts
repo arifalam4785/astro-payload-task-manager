@@ -1,56 +1,61 @@
+import 'dotenv/config'
 import { mongooseAdapter } from '@payloadcms/db-mongodb'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import path from 'path'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
-
+import { Blogs } from './collections/Blogs'
+// Collection Imports
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
-import { Tasks } from './collections/Task'
+import { Blogs } from '.Blogs/collections/Blogs'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 export default buildConfig({
-  // Use process.env for Node.js backends
-  serverURL: process.env.PUBLIC_PAYLOAD_URL || 'https://astro-payload-task-manager.onrender.com',
-
-  // Allow configuring the frontend origin via env var for deployed environments
-  // Set PUBLIC_FRONTEND_URL to your frontend origin (e.g. https://example.com)
-  cors: [
-    process.env.PUBLIC_FRONTEND_URL || 'http://localhost:4321',
-    process.env.PUBLIC_PAYLOAD_URL || 'https://astro-payload-task-manager.onrender.com',
-  ],
-  csrf: [
-    process.env.PUBLIC_FRONTEND_URL || 'http://localhost:4321',
-    process.env.PUBLIC_PAYLOAD_URL || 'https://astro-payload-task-manager.onrender.com',
-  ],
-
+  // Use process.env for the URL to ensure it works on both Local and Render
+  serverURL: process.env.PUBLIC_PAYLOAD_URL || 'http://localhost:3000',
+  
   admin: {
     user: Users.slug,
     importMap: {
       baseDir: path.resolve(dirname),
     },
-    // ✅ MOVED HERE: In Payload v3, cookieOptions lives inside admin
-    // This allows the cookie to be shared between localhost and Render
-    // @ts-expect-error
+    // This fixes the login "disappearing" issue on Render production
+    // @ts-ignore
     cookieOptions: {
-      secure: true,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'none',
     },
   },
+
+  // Added your new Blogs and Media collections here
+  collections: [Users, Media, Blogs],
   
-  collections: [Users, Media, Tasks],
   editor: lexicalEditor(),
-  secret: process.env.PAYLOAD_SECRET || 'YOUR_SECRET_HERE',
   
-  typescript: {
-    outputFile: path.resolve(dirname, 'payload-types.ts'),
-  },
-  db: mongooseAdapter({        
+  // Ensure your PAYLOAD_SECRET is in your Render Environment variables
+  secret: process.env.PAYLOAD_SECRET || 'emergency-secret-key-123',
+  
+  db: mongooseAdapter({
     url: process.env.DATABASE_URL || '',
   }),
+
   sharp,
-  plugins: [],
+
+  // Cloudinary Plugin: This saves your images forever
+  plugins: [
+    cloudinaryStorage({
+      collections: {
+        media: true,
+      },
+      config: {
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+        api_key: process.env.CLOUDINARY_API_KEY,
+        api_secret: process.env.CLOUDINARY_API_SECRET,
+      },
+    }),
+  ],
 })
