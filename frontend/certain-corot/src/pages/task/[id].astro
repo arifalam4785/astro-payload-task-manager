@@ -5,20 +5,13 @@ export const prerender = false;
 const { id } = Astro.params;
 // @ts-ignore
 const BACKEND_URL = import.meta.env.PUBLIC_PAYLOAD_URL || "https://astro-payload-task-manager.onrender.com";
-const cookie = Astro.request.headers.get("cookie") || "";
-
-// 1. CHECK AUTH FIRST
-if (!cookie.includes('payload-token')) {
-  return Astro.redirect('/login');
-}
 
 let task = null;
 
 try {
   // 2. FETCH WITH DEPTH
-  const res = await fetch(`${BACKEND_URL}/api/tasks/${id}?depth=1`, {
-    headers: { cookie }
-  });
+  // Don't forward cookies from the frontend server — fetch task as public data
+  const res = await fetch(`${BACKEND_URL}/api/tasks/${id}?depth=1`);
 
   if (res.ok) {
     task = await res.json();
@@ -79,6 +72,15 @@ if (!task) return Astro.redirect('/');
     </div>
 
     <script define:vars={{ id, BACKEND_URL }}>
+      // Client-side auth guard: redirect to login if not authenticated
+      (async function checkAuth() {
+        try {
+          const r = await fetch(`${BACKEND_URL}/api/users/me`, { credentials: 'include' });
+          if (!r.ok) window.location.href = '/login';
+        } catch (err) {
+          window.location.href = '/login';
+        }
+      })();
       const form = document.getElementById('edit-form');
       const btn = document.getElementById('update-btn');
 

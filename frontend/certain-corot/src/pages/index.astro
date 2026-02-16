@@ -6,25 +6,13 @@ export const prerender = false;
 
 // @ts-ignore
 const BACKEND_URL = import.meta.env.PUBLIC_PAYLOAD_URL || "https://astro-payload-task-manager.onrender.com";
-const cookie = Astro.request.headers.get("cookie") || "";
 
 let user = null;
 let tasks = [];
 
 try {
-  const meRes = await fetch(`${BACKEND_URL}/api/users/me`, {
-    headers: { cookie },
-  });
-
-  if (meRes.ok) {
-    const meData = await meRes.json();
-    user = meData.user;
-  }
-
-  // Fetching with depth=1 so taskImage becomes an object with an ID and URL
-  const taskRes = await fetch(`${BACKEND_URL}/api/tasks?limit=50&sort=-createdAt&depth=1`, {
-    headers: { cookie },
-  });
+  // Server-side: only fetch public tasks (no cookie forwarded)
+  const taskRes = await fetch(`${BACKEND_URL}/api/tasks?limit=50&sort=-createdAt&depth=1`);
 
   if (taskRes.ok) {
     const taskData = await taskRes.json();
@@ -48,27 +36,25 @@ try {
 
       </div>
 
-      {user ? (
-        <div class="mb-6">
-          <div class="flex justify-between items-center mb-4 bg-blue-50 p-2 rounded">
-            <p class="text-xs text-blue-700 font-medium">Logged in: {user.email}</p>
-            <button id="logout-btn" class="text-xs text-red-600 underline font-bold cursor-pointer">Logout</button>
-          </div>
+      <div id="auth-block" class="mb-6 hidden">
+        <div class="flex justify-between items-center mb-4 bg-blue-50 p-2 rounded">
+          <p class="text-xs text-blue-700 font-medium">Logged in: <span id="user-email"></span></p>
+          <button id="logout-btn" class="text-xs text-red-600 underline font-bold cursor-pointer">Logout</button>
+        </div>
 
-          <form id="task-form" class="flex flex-col gap-3 mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <div class="flex gap-2">
-              <input type="text" name="content" placeholder="Add a task (e.g. My Blog)..." class="flex-1 border p-2 rounded text-black" required />
-              <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700">Add</button>
-            </div>
-            <input type="file" name="file" accept="image/*,.html" class="text-xs" />
-          </form>
-        </div>
-      ) : (
-        <div class="mb-8 p-6 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg text-center">
-          <p class="text-gray-600 mb-4">Log in to create tasks.</p>
-          <a href="/login" class="bg-blue-600 text-white px-6 py-2 rounded inline-block text-sm">Login</a>
-        </div>
-      )}
+        <form id="task-form" class="flex flex-col gap-3 mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div class="flex gap-2">
+            <input type="text" name="content" placeholder="Add a task (e.g. My Blog)..." class="flex-1 border p-2 rounded text-black" required />
+            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700">Add</button>
+          </div>
+          <input type="file" name="file" accept="image/*,.html" class="text-xs" />
+        </form>
+      </div>
+
+      <div id="guest-block" class="mb-8 p-6 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg text-center hidden">
+        <p class="text-gray-600 mb-4">Log in to create tasks.</p>
+        <a href="/login" class="bg-blue-600 text-white px-6 py-2 rounded inline-block text-sm">Login</a>
+      </div>
 
       <ul class="space-y-3">
         {tasks.map((task: any) => {
@@ -118,6 +104,33 @@ try {
     <script>
       // @ts-ignore
 const BACKEND_URL = import.meta.env.PUBLIC_PAYLOAD_URL || "https://astro-payload-task-manager.onrender.com";
+
+      // Check auth (client-side) and toggle UI
+      async function checkAuth() {
+        try {
+          const res = await fetch(`${BACKEND_URL}/api/users/me`, { credentials: 'include' });
+          const authBlock = document.getElementById('auth-block');
+          const guestBlock = document.getElementById('guest-block');
+          const userEmail = document.getElementById('user-email');
+
+          if (res.ok) {
+            const data = await res.json();
+            if (userEmail && data.user?.email) userEmail.textContent = data.user.email;
+            if (authBlock) authBlock.classList.remove('hidden');
+            if (guestBlock) guestBlock.classList.add('hidden');
+          } else {
+            if (authBlock) authBlock.classList.add('hidden');
+            if (guestBlock) guestBlock.classList.remove('hidden');
+          }
+        } catch (err) {
+          const authBlock = document.getElementById('auth-block');
+          const guestBlock = document.getElementById('guest-block');
+          if (authBlock) authBlock.classList.add('hidden');
+          if (guestBlock) guestBlock.classList.remove('hidden');
+        }
+      }
+
+      checkAuth();
 
       // LOGOUT
       const logoutBtn = document.getElementById("logout-btn");
