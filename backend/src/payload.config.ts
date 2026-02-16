@@ -16,13 +16,15 @@ export default buildConfig({
   // Use process.env for Node.js backends
   serverURL: process.env.PUBLIC_PAYLOAD_URL || 'https://astro-payload-task-manager.onrender.com',
 
+  // Allow configuring the frontend origin via env var for deployed environments
+  // Set PUBLIC_FRONTEND_URL to your frontend origin (e.g. https://example.com)
   cors: [
-    'http://localhost:4321',
-    'https://astro-payload-task-manager.onrender.com'
+    process.env.PUBLIC_FRONTEND_URL || 'http://localhost:4321',
+    process.env.PUBLIC_PAYLOAD_URL || 'https://astro-payload-task-manager.onrender.com',
   ],
   csrf: [
-    'http://localhost:4321',
-    'https://astro-payload-task-manager.onrender.com'
+    process.env.PUBLIC_FRONTEND_URL || 'http://localhost:4321',
+    process.env.PUBLIC_PAYLOAD_URL || 'https://astro-payload-task-manager.onrender.com',
   ],
 
   admin: {
