@@ -9,7 +9,6 @@ import { Blogs } from './collections/Blogs'
 // Collection Imports
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
-import { Blogs } from '.Blogs/collections/Blogs'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -45,17 +44,6 @@ export default buildConfig({
 
   sharp,
 
-  // Cloudinary Plugin: This saves your images forever
-  plugins: [
-    cloudinaryStorage({
-      collections: {
-        media: true,
-      },
-      config: {
-        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-        api_key: process.env.CLOUDINARY_API_KEY,
-        api_secret: process.env.CLOUDINARY_API_SECRET,
-      },
-    }),
-  ],
+  // Cloudinary integration can be added later
+  plugins: [],
 })
