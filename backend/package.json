@@ -20,6 +20,7 @@
   "dependencies": {
     "@payloadcms/db-mongodb": "3.76.0",
     "@payloadcms/next": "3.76.0",
+    "@payloadcms/plugin-cloudinary": "3.76.0",
     "@payloadcms/richtext-lexical": "3.76.0",
     "@payloadcms/ui": "3.76.0",
     "cloudinary": "^2.9.0",
