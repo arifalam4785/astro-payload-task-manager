@@ -9,9 +9,9 @@ const nextConfig = {
       '.js': ['.ts', '.tsx', '.js', '.jsx'],
       '.mjs': ['.mts', '.mjs'],
     }
-
     return webpackConfig
   },
 }
 
-export default withPayload(nextConfig, { devBundleServerPackages: false })
+// Just use withPayload(nextConfig) for now to ensure maximum compatibility
+export default withPayload(nextConfig)
