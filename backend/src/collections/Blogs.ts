@@ -7,9 +7,31 @@ export const Blogs: CollectionConfig = {
   },
   access: {
     read: () => true,
-    create: ({ req: { user } }) => !!user, // Only logged-in users can write
+    create: ({ req: { user } }) => !!user,
     update: ({ req: { user } }) => !!user,
     delete: ({ req: { user } }) => !!user,
+  },
+  hooks: {
+    beforeChange: [
+      async ({ data }) => {
+        // AI logic moved to dynamic import to prevent build errors
+        if (data.aiFixGrammar && data.title) {
+          try {
+            const { GoogleGenerativeAI } = await import('@google/generative-ai');
+            const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+            const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+            
+            const prompt = `Fix grammar: ${data.title}`;
+            const result = await model.generateContent(prompt);
+            data.title = result.response.text();
+            data.aiFixGrammar = false;
+          } catch (err) {
+            console.error("AI Error:", err);
+          }
+        }
+        return data;
+      }
+    ]
   },
   fields: [
     {
@@ -18,14 +40,19 @@ export const Blogs: CollectionConfig = {
       required: true,
     },
     {
+      name: 'aiFixGrammar',
+      type: 'checkbox',
+      label: 'AI Fix Title',
+    },
+    {
       name: 'content',
-      type: 'richText', // This is where the AI will help you write
+      type: 'richText',
       required: true,
     },
     {
       name: 'featuredImage',
       type: 'upload',
-      relationTo: 'media', // Links to the Media collection above
+      relationTo: 'media',
     },
     {
       name: 'category',
