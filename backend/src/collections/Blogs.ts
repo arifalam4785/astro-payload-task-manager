@@ -2,6 +2,12 @@ import { CollectionConfig } from 'payload'
 
 export const Blogs: CollectionConfig = {
   slug: 'blogs',
+  access: {
+    read: () => true,
+    create: () => true,
+    update: () => true,
+    delete: () => true,
+  },
   admin: {
     useAsTitle: 'title',
   },
@@ -14,6 +20,7 @@ export const Blogs: CollectionConfig = {
     {
       name: 'content',
       type: 'richText',
+      required: true,
     },
   ],
 }
